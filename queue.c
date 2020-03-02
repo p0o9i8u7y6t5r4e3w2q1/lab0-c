@@ -5,6 +5,20 @@
 #include "harness.h"
 #include "queue.h"
 
+/*
+void printQueue(queue_t *q)
+{
+    printf("[ ");
+    list_ele_t *ele = q->head;
+    while (ele != NULL) {
+        printf(ele->value);
+        printf(" ");
+        ele = ele->next;
+    }
+    printf("]\n");
+}
+*/
+
 void free_ele(list_ele_t *ele)
 {
     if (ele == NULL)
@@ -133,19 +147,26 @@ bool q_insert_tail(queue_t *q, char *s)
  */
 bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
 {
-    if (q == NULL)
+    if (q == NULL || q->head == NULL || sp == NULL)
         return false;
-    /* TODO: You need to fix up this code. */
-    /* TODO: Remove the above comment when you are about to implement. */
+
     list_ele_t *removed = q->head;
     q->head = q->head->next;
     if (removed == q->tail)
         q->tail = NULL;
-    if (sp != NULL)
-        strncpy(removed->value, sp, bufsize - 1);
+    removed->next = NULL;
+
+    if (removed->value != NULL) {
+        int copy_len = strlen(removed->value);
+        if (bufsize - 1 < copy_len)
+            copy_len = bufsize - 1;
+
+        strncpy(sp, removed->value, copy_len);
+        sp[copy_len] = '\0';
+    }
 
     free_ele(removed);
-    q->size -= 1;
+    q->size--;
     return true;
 }
 
@@ -190,17 +211,87 @@ void q_reverse(queue_t *q)
     q->head = prev_ele;
 }
 
-/*
- * Sort elements of queue in ascending order
- * No effect if q is NULL or empty. In addition, if q has only one
- * element, do nothing.
- */
-void q_sort(queue_t *q)
+list_ele_t *pop_next(queue_t *q, list_ele_t *prev)
+{
+    if (q == NULL)
+        return NULL;
+
+    list_ele_t **change_pos = (prev == NULL) ? &(q->head) : &(prev->next);
+    list_ele_t *removed = *change_pos;
+    *change_pos = removed->next;
+    removed->next = NULL;
+    if (q->tail == removed)
+        q->tail = prev;
+    q->size--;
+    return removed;
+}
+
+void push_next(queue_t *q, list_ele_t *prev, list_ele_t *new_ele)
+{
+    if (q == NULL || prev == NULL || new_ele == NULL)
+        return;
+
+    list_ele_t *next_ele = prev->next;
+    prev->next = new_ele;
+    new_ele->next = next_ele;
+    if (q->tail == prev)
+        q->tail = new_ele;
+    q->size++;
+}
+
+void partition(queue_t *q, list_ele_t *prefix, list_ele_t *suffix)
+{
+    if (q == NULL)
+        return;
+
+    list_ele_t *pivot = (prefix == NULL) ? q->head : prefix->next;
+    list_ele_t *separator = pivot;
+    list_ele_t *prev_ele = pivot;
+
+    while (prev_ele->next != suffix) {
+        if (strcmp(pivot->value, prev_ele->next->value) > 0) {
+            // pivot > prev_ele->next
+            if (separator != prev_ele) {
+                // prev_ele->next move to separator->next
+                // separator = separator->next
+                // next time check prev_ele->next
+                list_ele_t *now_ele = pop_next(q, prev_ele);
+                push_next(q, separator, now_ele);
+            } else {
+                // when separator == prev_ele
+                // next time check prev_ele->next
+                // separator = separator->next
+                prev_ele = prev_ele->next;
+            }
+            separator = separator->next;
+        } else
+            prev_ele = prev_ele->next;
+    }
+
+    if (separator != pivot) {
+        pivot = pop_next(q, prefix);
+        push_next(q, separator, pivot);
+        partition(q, prefix, pivot);
+    }
+
+    if (pivot->next != suffix) {
+        partition(q, pivot, suffix);
+    }
+}
+
+void quick_sort(queue_t *q)
 {
     if (q == NULL || q->head == NULL || q->size == 1)
         return;
-    /* TODO: You need to write the code for this function */
-    /* TODO: Remove the above comment when you are about to implement. */
+    partition(q, NULL, NULL);
+}
+
+/*
+void bubble_sort(queue_t *q)
+{
+    if (q == NULL || q->head == NULL || q->size == 1)
+        return;
+
     list_ele_t *cmp_tail = NULL;
     while (cmp_tail != q->head) {
         list_ele_t **now_pos = &(q->head);
@@ -219,4 +310,16 @@ void q_sort(queue_t *q)
             q->tail = *now_pos;  // only first time
         cmp_tail = (*now_pos);
     }
+}
+*/
+
+/*
+ * Sort elements of queue in ascending order
+ * No effect if q is NULL or empty. In addition, if q has only one
+ * element, do nothing.
+ */
+void q_sort(queue_t *q)
+{
+    // bubble_sort(q);
+    quick_sort(q);
 }
