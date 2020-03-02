@@ -6,10 +6,10 @@
 #include "queue.h"
 
 /*
-void printQueue(queue_t *q)
+void printList(list_ele_t *start)
 {
     printf("[ ");
-    list_ele_t *ele = q->head;
+    list_ele_t *ele = start;
     while (ele != NULL) {
         printf(ele->value);
         printf(" ");
@@ -19,6 +19,18 @@ void printQueue(queue_t *q)
 }
 */
 
+/*
+new
+it dkaec
+it dakec
+it adkav
+it ckaec
+it daekaf
+it adjqwf
+it heiqqd
+it kedai
+sort
+*/
 void free_ele(list_ele_t *ele)
 {
     if (ele == NULL)
@@ -176,13 +188,7 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
  */
 int q_size(queue_t *q)
 {
-    /* TODO: You need to write the code for this function */
-    /* Remember: It should operate in O(1) time */
-    /* TODO: Remove the above comment when you are about to implement. */
-    if (q == NULL)
-        return 0;
-    else
-        return q->size;
+    return (q == NULL) ? 0 : q->size;
 }
 
 /*
@@ -196,13 +202,11 @@ void q_reverse(queue_t *q)
 {
     if (q == NULL || q->head == NULL || q->size == 1)
         return;
-    /* TODO: You need to write the code for this function */
-    /* TODO: Remove the above comment when you are about to implement. */
     list_ele_t *ele = q->head;
     list_ele_t *prev_ele = NULL;
     list_ele_t *tmp_ele;
     q->tail = ele;
-    while (ele != NULL) {
+    while (ele->next != NULL) {
         tmp_ele = ele->next;
         ele->next = prev_ele;
         prev_ele = ele;
@@ -211,6 +215,7 @@ void q_reverse(queue_t *q)
     q->head = prev_ele;
 }
 
+/*
 list_ele_t *pop_next(queue_t *q, list_ele_t *prev)
 {
     if (q == NULL)
@@ -279,19 +284,84 @@ void partition(queue_t *q, list_ele_t *prefix, list_ele_t *suffix)
     }
 }
 
+// q has greater than one elements
 void quick_sort(queue_t *q)
 {
-    if (q == NULL || q->head == NULL || q->size == 1)
-        return;
     partition(q, NULL, NULL);
 }
+*/
 
+
+void split_list(list_ele_t *source, list_ele_t **list1, list_ele_t **list2)
+{
+    list_ele_t *fast_ele = source->next;
+    list_ele_t *slow_ele = source;
+    while (fast_ele != NULL) {
+        fast_ele = fast_ele->next;
+        if (fast_ele != NULL) {
+            fast_ele = fast_ele->next;
+            slow_ele = slow_ele->next;
+        }
+    }
+
+    *list1 = source;
+    *list2 = slow_ele->next;
+    slow_ele->next = NULL;
+}
+
+// input start address, output end element
+// head not NULL
+list_ele_t *split_and_merge(list_ele_t **head)
+{
+    if (*head == NULL || (*head)->next == NULL)
+        return *head;
+
+    list_ele_t *left = NULL;
+    list_ele_t *right = NULL;
+    split_list(*head, &left, &right);
+
+    /* get end element */
+    split_and_merge(&left);  // always not NULL
+    split_and_merge(&right);
+
+    list_ele_t *tail_ele = NULL;
+    if (strcmp(left->value, right->value) < 0) {
+        *head = tail_ele = left;
+        left = left->next;
+    } else {
+        *head = tail_ele = right;
+        right = right->next;
+    }
+
+    list_ele_t **next = NULL;
+    while (!(left == NULL && right == NULL)) {
+        if (left == NULL)
+            next = &right;
+        else if (right == NULL) {
+            next = &left;
+        } else if (strcmp(left->value, right->value) < 0) {
+            next = &left;
+        } else {
+            next = &right;
+        }
+        tail_ele->next = *next;
+        tail_ele = tail_ele->next;
+        *next = (*next)->next;
+    }
+    return tail_ele;
+}
+
+// q has greater than one elements
+void merge_sort(queue_t *q)
+{
+    list_ele_t *tail_ele = split_and_merge(&(q->head));
+    q->tail = tail_ele;
+}
+
+// q has greater than one elements
 /*
 void bubble_sort(queue_t *q)
 {
-    if (q == NULL || q->head == NULL || q->size == 1)
-        return;
-
     list_ele_t *cmp_tail = NULL;
     while (cmp_tail != q->head) {
         list_ele_t **now_pos = &(q->head);
@@ -320,6 +390,9 @@ void bubble_sort(queue_t *q)
  */
 void q_sort(queue_t *q)
 {
+    if (q == NULL || q->head == NULL || q->size == 1)
+        return;
+    merge_sort(q);
     // bubble_sort(q);
-    quick_sort(q);
+    // quick_sort(q);
 }
