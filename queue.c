@@ -129,13 +129,14 @@ bool q_insert_tail(queue_t *q, char *s)
     if (newt == NULL)
         return false;
     /* Don't forget to allocate space for the string and copy it */
-    char *new_s = malloc(strlen(s) + 1);
+    int size = strlen(s) + 1;
+    char *new_s = malloc(size);
     /* What if either call to malloc returns NULL? */
     if (new_s == NULL) {
         free(newt);
         return false;
     }
-    strncpy(new_s, s, strlen(s) + 1);
+    strncpy(new_s, s, size);
     newt->value = new_s;
     newt->next = NULL;
 
@@ -206,7 +207,7 @@ void q_reverse(queue_t *q)
     list_ele_t *prev_ele = NULL;
     list_ele_t *tmp_ele;
     q->tail = ele;
-    while (ele->next != NULL) {
+    while (ele != NULL) {
         tmp_ele = ele->next;
         ele->next = prev_ele;
         prev_ele = ele;
@@ -321,8 +322,8 @@ list_ele_t *split_and_merge(list_ele_t **head)
     split_list(*head, &left, &right);
 
     /* get end element */
-    split_and_merge(&left);  // always not NULL
-    split_and_merge(&right);
+    list_ele_t *left_tail = split_and_merge(&left);
+    list_ele_t *right_tail = split_and_merge(&right);
 
     list_ele_t *tail_ele = NULL;
     if (strcmp(left->value, right->value) < 0) {
@@ -333,20 +334,21 @@ list_ele_t *split_and_merge(list_ele_t **head)
         right = right->next;
     }
 
-    list_ele_t **next = NULL;
-    while (!(left == NULL && right == NULL)) {
-        if (left == NULL)
-            next = &right;
-        else if (right == NULL) {
-            next = &left;
+    while (true) {
+        if (left == NULL) {
+            tail_ele->next = right;
+            return right_tail;
+        } else if (right == NULL) {
+            tail_ele->next = left;
+            return left_tail;
         } else if (strcmp(left->value, right->value) < 0) {
-            next = &left;
+            tail_ele->next = left;
+            left = left->next;
         } else {
-            next = &right;
+            tail_ele->next = right;
+            right = right->next;
         }
-        tail_ele->next = *next;
         tail_ele = tail_ele->next;
-        *next = (*next)->next;
     }
     return tail_ele;
 }
